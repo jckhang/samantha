@@ -1,7 +1,7 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-import google.generativeai as genai
+import google.genai as genai
 import sqlite3
 from datetime import datetime
 import os
@@ -22,8 +22,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Gemini配置
-genai.configure(api_key=os.getenv("GEMINI_API_KEY", "your-gemini-api-key-here"))
+# Gemini客户端
+client = genai.Client(api_key=os.getenv("GEMINI_API_KEY", "your-gemini-api-key-here"))
 
 # 数据模型
 class ChatRequest(BaseModel):
@@ -81,10 +81,12 @@ def init_db():
 def analyze_emotion(text: str) -> str:
     """分析文本情感"""
     try:
-        model = genai.GenerativeModel('gemini-pro')
         prompt = f"分析以下文本的情感，只返回：happy, sad, angry, calm, neutral\n\n文本：{text}"
 
-        response = model.generate_content(prompt)
+        response = client.models.generate_content(
+            model="gemini-1.5-flash",
+            contents=prompt
+        )
         emotion = response.text.strip().lower()
         logger.info(f"情感分析结果: {emotion}")
         return emotion
@@ -96,7 +98,6 @@ def analyze_emotion(text: str) -> str:
 def generate_response(message: str, emotion: str) -> str:
     """生成AI回复"""
     try:
-        model = genai.GenerativeModel('gemini-pro')
         prompt = f"""
 你是Samantha，一个智能、温暖的AI助手。
 用户当前情感状态：{emotion}
@@ -112,7 +113,10 @@ def generate_response(message: str, emotion: str) -> str:
 用户消息：{message}
 """
 
-        response = model.generate_content(prompt)
+        response = client.models.generate_content(
+            model="gemini-1.5-flash",
+            contents=prompt
+        )
         ai_response = response.text.strip()
         logger.info(f"AI回复生成成功: {ai_response[:50]}...")
         return ai_response

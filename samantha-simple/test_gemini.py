@@ -1,61 +1,59 @@
 #!/usr/bin/env python3
 """
-Gemini API 测试脚本
+Gemini API 测试脚本 - 使用 google-genai
 """
 
 import os
-import google.generativeai as genai
+import google.genai as genai
+
+# 创建Gemini客户端
+client = genai.Client(api_key=os.getenv("GEMINI_API_KEY", ""))
 
 def test_gemini_connection():
     """测试Gemini连接"""
+    print("测试 Gemini连接...")
     try:
-        # 配置API密钥
-        api_key = os.getenv("GEMINI_API_KEY", "your-gemini-api-key-here")
-        genai.configure(api_key=api_key)
-
-        # 创建模型
-        model = genai.GenerativeModel('gemini-pro')
-
-        # 测试简单对话
-        response = model.generate_content("你好，请简单介绍一下自己。")
-
-        print("✅ Gemini连接测试成功")
-        print(f"回复: {response.text[:100]}...")
-        return True
-
+        response = client.models.generate_content(
+            model="gemini-1.5-flash",
+            contents="Hello, please respond with 'OK'"
+        )
+        if response.text.strip():
+            print("✅ Gemini连接测试成功")
+            return True
+        else:
+            print("❌ Gemini连接测试失败: 空响应")
+            return False
     except Exception as e:
         print(f"❌ Gemini连接测试失败: {e}")
         return False
 
 def test_emotion_analysis():
     """测试情感分析"""
+    print("测试 情感分析...")
     try:
-        api_key = os.getenv("GEMINI_API_KEY", "your-gemini-api-key-here")
-        genai.configure(api_key=api_key)
-
-        model = genai.GenerativeModel('gemini-pro')
-
-        # 测试情感分析
         prompt = "分析以下文本的情感，只返回：happy, sad, angry, calm, neutral\n\n文本：我今天很开心！"
-        response = model.generate_content(prompt)
 
-        print("✅ 情感分析测试成功")
-        print(f"情感: {response.text.strip()}")
-        return True
+        response = client.models.generate_content(
+            model="gemini-1.5-flash",
+            contents=prompt
+        )
+        emotion = response.text.strip().lower()
 
+        valid_emotions = ['happy', 'sad', 'angry', 'calm', 'neutral']
+        if any(valid in emotion for valid in valid_emotions):
+            print(f"✅ 情感分析测试成功: {emotion}")
+            return True
+        else:
+            print(f"❌ 情感分析测试失败: 无效情感 {emotion}")
+            return False
     except Exception as e:
         print(f"❌ 情感分析测试失败: {e}")
         return False
 
 def test_chat_response():
     """测试聊天回复"""
+    print("测试 聊天回复...")
     try:
-        api_key = os.getenv("GEMINI_API_KEY", "your-gemini-api-key-here")
-        genai.configure(api_key=api_key)
-
-        model = genai.GenerativeModel('gemini-pro')
-
-        # 测试聊天回复
         prompt = """
 你是Samantha，一个智能、温暖的AI助手。
 用户当前情感状态：happy
@@ -68,43 +66,53 @@ def test_chat_response():
 
 回复要简洁、自然，不超过100字。
 
-用户消息：你好，Samantha！
+用户消息：你好！
 """
-        response = model.generate_content(prompt)
 
-        print("✅ 聊天回复测试成功")
-        print(f"回复: {response.text.strip()}")
-        return True
+        response = client.models.generate_content(
+            model="gemini-1.5-flash",
+            contents=prompt
+        )
+        ai_response = response.text.strip()
 
+        if len(ai_response) > 0:
+            print(f"✅ 聊天回复测试成功: {ai_response[:50]}...")
+            return True
+        else:
+            print("❌ 聊天回复测试失败: 空响应")
+            return False
     except Exception as e:
         print(f"❌ 聊天回复测试失败: {e}")
         return False
 
 def main():
-    """主测试函数"""
+    """主函数"""
     print("=== Gemini API 测试 ===")
     print()
 
+    # 检查API密钥
+    api_key = os.getenv("GEMINI_API_KEY", "")
+    if not api_key:
+        print("❌ 未设置 GEMINI_API_KEY 环境变量")
+        return
+
+    # 运行测试
     tests = [
-        ("Gemini连接", test_gemini_connection),
-        ("情感分析", test_emotion_analysis),
-        ("聊天回复", test_chat_response)
+        test_gemini_connection,
+        test_emotion_analysis,
+        test_chat_response
     ]
 
     passed = 0
-    total = len(tests)
-
-    for test_name, test_func in tests:
-        print(f"测试 {test_name}...")
-        if test_func():
+    for test in tests:
+        if test():
             passed += 1
         print()
 
-    print(f"测试结果: {passed}/{total} 通过")
-
-    if passed == total:
-        print("🎉 所有Gemini测试通过！")
-        print("💡 提示: 要获得完整功能，请设置GEMINI_API_KEY环境变量")
+    # 输出结果
+    print(f"测试结果: {passed}/{len(tests)} 通过")
+    if passed == len(tests):
+        print("🎉 所有测试通过！")
     else:
         print("⚠️  部分测试失败，请检查Gemini API配置")
 
