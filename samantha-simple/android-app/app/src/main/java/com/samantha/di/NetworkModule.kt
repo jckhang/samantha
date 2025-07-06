@@ -37,7 +37,7 @@ object NetworkModule {
     @Singleton
     fun provideRetrofit(okHttpClient: OkHttpClient): Retrofit {
         return Retrofit.Builder()
-            .baseUrl("https://samantha-ai-dev.vercel.app/") // 使用Vercel部署的API地址
+            .baseUrl("http://10.0.2.2:8000/") // Android模拟器访问本地主机的地址
             .client(okHttpClient)
             .addConverterFactory(GsonConverterFactory.create())
             .build()
