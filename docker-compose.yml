@@ -1,0 +1,129 @@
+version: '3.8'
+
+services:
+  # PostgreSQL数据库
+  postgres:
+    image: postgres:15-alpine
+    container_name: samantha_postgres
+    environment:
+      POSTGRES_DB: samantha_db
+      POSTGRES_USER: samantha_user
+      POSTGRES_PASSWORD: samantha_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./backend/init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - samantha_network
+
+  # Redis缓存
+  redis:
+    image: redis:7-alpine
+    container_name: samantha_redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - samantha_network
+
+  # RabbitMQ消息队列
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    container_name: samantha_rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: samantha_user
+      RABBITMQ_DEFAULT_PASS: samantha_password
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    networks:
+      - samantha_network
+
+  # 后端API服务
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: samantha_backend
+    environment:
+      - DATABASE_URL=postgresql://samantha_user:samantha_password@postgres:5432/samantha_db
+      - REDIS_URL=redis://redis:6379
+      - RABBITMQ_URL=amqp://samantha_user:samantha_password@rabbitmq:5672/
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - AZURE_SPEECH_KEY=${AZURE_SPEECH_KEY}
+    ports:
+      - "8000:8000"
+    depends_on:
+      - postgres
+      - redis
+      - rabbitmq
+    volumes:
+      - ./backend:/app
+    networks:
+      - samantha_network
+
+  # AI服务
+  ai-service:
+    build:
+      context: ./ai-services
+      dockerfile: Dockerfile
+    container_name: samantha_ai_service
+    environment:
+      - REDIS_URL=redis://redis:6379
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+    ports:
+      - "8001:8001"
+    depends_on:
+      - redis
+    volumes:
+      - ./ai-services:/app
+      - model_cache:/app/models
+    networks:
+      - samantha_network
+
+  # 监控服务
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: samantha_prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    networks:
+      - samantha_network
+
+  # Grafana监控面板
+  grafana:
+    image: grafana/grafana:latest
+    container_name: samantha_grafana
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    ports:
+      - "3000:3000"
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./monitoring/grafana/dashboards:/etc/grafana/provisioning/dashboards
+      - ./monitoring/grafana/datasources:/etc/grafana/provisioning/datasources
+    depends_on:
+      - prometheus
+    networks:
+      - samantha_network
+
+volumes:
+  postgres_data:
+  redis_data:
+  rabbitmq_data:
+  model_cache:
+  prometheus_data:
+  grafana_data:
+
+networks:
+  samantha_network:
+    driver: bridge
