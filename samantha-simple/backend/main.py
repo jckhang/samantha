@@ -1,7 +1,7 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-import openai
+import google.generativeai as genai
 import sqlite3
 from datetime import datetime
 import os
@@ -22,8 +22,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# OpenAI配置
-openai.api_key = os.getenv("OPENAI_API_KEY", "your-openai-api-key-here")
+# Gemini配置
+genai.configure(api_key=os.getenv("GEMINI_API_KEY", "your-gemini-api-key-here"))
 
 # 数据模型
 class ChatRequest(BaseModel):
@@ -81,16 +81,11 @@ def init_db():
 def analyze_emotion(text: str) -> str:
     """分析文本情感"""
     try:
-        response = openai.ChatCompletion.create(
-            model="gpt-3.5-turbo",
-            messages=[
-                {"role": "system", "content": "分析以下文本的情感，只返回：happy, sad, angry, calm, neutral"},
-                {"role": "user", "content": text}
-            ],
-            max_tokens=10,
-            temperature=0.1
-        )
-        emotion = response.choices[0].message.content.strip().lower()
+        model = genai.GenerativeModel('gemini-pro')
+        prompt = f"分析以下文本的情感，只返回：happy, sad, angry, calm, neutral\n\n文本：{text}"
+
+        response = model.generate_content(prompt)
+        emotion = response.text.strip().lower()
         logger.info(f"情感分析结果: {emotion}")
         return emotion
     except Exception as e:
@@ -101,30 +96,24 @@ def analyze_emotion(text: str) -> str:
 def generate_response(message: str, emotion: str) -> str:
     """生成AI回复"""
     try:
-        system_prompt = f"""
-        你是Samantha，一个智能、温暖的AI助手。
-        用户当前情感状态：{emotion}
+        model = genai.GenerativeModel('gemini-pro')
+        prompt = f"""
+你是Samantha，一个智能、温暖的AI助手。
+用户当前情感状态：{emotion}
 
-        请根据用户的情感状态提供合适的回应：
-        - 如果用户情绪低落，提供温暖和支持
-        - 如果用户情绪积极，分享快乐
-        - 如果用户情绪愤怒，保持冷静和理解
-        - 始终保持友好、有帮助的态度
+请根据用户的情感状态提供合适的回应：
+- 如果用户情绪低落，提供温暖和支持
+- 如果用户情绪积极，分享快乐
+- 如果用户情绪愤怒，保持冷静和理解
+- 始终保持友好、有帮助的态度
 
-        回复要简洁、自然，不超过100字。
-        """
+回复要简洁、自然，不超过100字。
 
-        response = openai.ChatCompletion.create(
-            model="gpt-3.5-turbo",
-            messages=[
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": message}
-            ],
-            max_tokens=150,
-            temperature=0.7
-        )
+用户消息：{message}
+"""
 
-        ai_response = response.choices[0].message.content.strip()
+        response = model.generate_content(prompt)
+        ai_response = response.text.strip()
         logger.info(f"AI回复生成成功: {ai_response[:50]}...")
         return ai_response
     except Exception as e:

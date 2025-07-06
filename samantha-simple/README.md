@@ -11,7 +11,7 @@
 ## 🏗️ 技术架构
 
 ```
-Android App (Kotlin + Compose) ↔ FastAPI (Python) ↔ OpenAI GPT-3.5
+Android App (Kotlin + Compose) ↔ FastAPI (Python) ↔ Google Gemini
 ```
 
 ### 技术栈
@@ -25,7 +25,7 @@ Android App (Kotlin + Compose) ↔ FastAPI (Python) ↔ OpenAI GPT-3.5
 **后端 (Python)**
 - FastAPI框架
 - SQLite数据库
-- OpenAI GPT-3.5集成
+- Google Gemini集成
 
 ## 🚀 快速开始
 
@@ -33,7 +33,7 @@ Android App (Kotlin + Compose) ↔ FastAPI (Python) ↔ OpenAI GPT-3.5
 
 - Python 3.9+
 - Android Studio Arctic Fox+
-- OpenAI API密钥
+- Google Gemini API密钥
 
 ### 1. 克隆项目
 
@@ -45,7 +45,7 @@ cd samantha-simple
 ### 2. 配置环境变量
 
 ```bash
-export OPENAI_API_KEY="your-openai-api-key-here"
+export GEMINI_API_KEY="your-gemini-api-key-here"
 ```
 
 ### 3. 启动后端服务
@@ -171,7 +171,7 @@ docker-compose down
 
 1. **后端服务无法启动**
    - 检查Python版本 (需要3.9+)
-   - 检查OpenAI API密钥是否正确
+   - 检查Google Gemini API密钥是否正确
    - 查看后端日志
 
 2. **Android应用无法连接后端**
@@ -180,7 +180,7 @@ docker-compose down
    - 查看Android日志
 
 3. **API调用失败**
-   - 检查OpenAI API配额
+   - 检查Google Gemini API配额
    - 检查网络连接
    - 查看API响应日志
 

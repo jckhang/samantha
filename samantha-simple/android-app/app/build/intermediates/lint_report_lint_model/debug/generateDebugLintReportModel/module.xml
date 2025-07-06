@@ -1,0 +1,19 @@
+<lint-module
+    format="1"
+    dir="/Users/yuxiang/workspaces/samantha/samantha-simple/android-app/app"
+    name=":app"
+    type="APP"
+    maven="Samantha:app:unspecified"
+    agpVersion="8.11.0"
+    buildFolder="build"
+    bootClassPath="/Users/yuxiang/Library/Android/sdk/platforms/android-34/android.jar:/Users/yuxiang/Library/Android/sdk/build-tools/35.0.0/core-lambda-stubs.jar"
+    javaSourceLevel="17"
+    compileTarget="android-34"
+    neverShrinking="true">
+  <lintOptions
+      abortOnError="true"
+      absolutePaths="true"
+      checkReleaseBuilds="true"
+      explainIssues="true"/>
+  <variant name="debug"/>
+</lint-module>
