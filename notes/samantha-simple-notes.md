@@ -1,266 +1,148 @@
-# Samantha AI助手 - 最简化设计笔记
+# Samantha AI 项目笔记
 
-## 设计理念
-- **专注核心**: 只保留3个核心功能
-- **简单易用**: 界面简洁，功能明确
-- **快速开发**: 6周完成MVP
-- **成本低廉**: 最小化开发资源
+## 项目概述
+Samantha AI 是一个智能聊天助手项目，包含Android客户端和Python后端。
 
-## 核心功能 (3个)
+## 技术栈
+- **前端**: Android (Kotlin + Jetpack Compose)
+- **后端**: Python (FastAPI + SQLite)
+- **AI服务**: Google Gemini
+- **架构**: MVVM + Repository Pattern
 
-### 1. 智能对话
-- 基础文字问答
-- GPT-3.5集成
-- 简单对话历史
+## 最近解决的问题
 
-### 2. 语音交互
-- 语音识别 (语音→文字)
-- 语音合成 (文字→语音)
-- 语音/文字切换
+### Android 网络通信问题 (2025-07-06)
 
-### 3. 情感回应
-- 基础情感分析
-- 情感化回复
-- 简单用户偏好
-
-## 技术架构 (简化)
-
-### 前端
-- **语言**: Kotlin
-- **UI**: Jetpack Compose
-- **存储**: Room (本地SQLite)
-- **网络**: Retrofit
-
-### 后端
-- **语言**: Python
-- **框架**: FastAPI
-- **数据库**: SQLite
-- **AI**: OpenAI GPT-3.5
-
-### 架构图
+**问题描述**: Android应用无法连接到后端API，出现错误：
 ```
-Android App (Kotlin) ↔ Simple API (Python) ↔ OpenAI
+CLEARTEXT communication to 10.0.2.2 not permitted by network security policy
 ```
 
-## 界面设计 (极简)
+**根本原因**: Android 9.0+ 默认禁止明文HTTP通信
 
-### 主界面布局
-```
-┌─────────────────────────┐
-│     Samantha AI         │
-├─────────────────────────┤
-│                         │
-│    对话区域             │
-│                         │
-│                         │
-├─────────────────────────┤
-│  [🎤] [输入框] [发送]   │
-└─────────────────────────┘
-```
+**解决方案**:
+1. 创建网络安全配置文件 `network_security_config.xml`
+2. 在 `AndroidManifest.xml` 中引用配置
+3. 在 `NetworkModule.kt` 中添加 `ConnectionSpec.CLEARTEXT` 支持
 
-### 功能按钮
-- **🎤**: 语音/文字切换
-- **💬**: 文字输入
-- **📝**: 对话历史
-- **⚙️**: 简单设置
-
-## 开发阶段 (6周)
-
-### 第1-2周: 基础对话
-- Android项目搭建
-- 基础UI界面
-- OpenAI API集成
-- 简单对话功能
-
-### 第3-4周: 语音功能
-- 语音识别集成
-- 语音合成功能
-- 语音/文字切换
-
-### 第5周: 情感功能
-- 基础情感分析
-- 情感化回复
-- 简单用户偏好
-
-### 第6周: 优化发布
-- 性能优化
-- 错误处理
-- 应用发布
-
-## 数据库设计 (简化)
-
-### 表结构
-```sql
--- 对话表
-CREATE TABLE conversations (
-    id INTEGER PRIMARY KEY,
-    user_id INTEGER,
-    message TEXT,
-    response TEXT,
-    emotion TEXT,
-    created_at TIMESTAMP
-);
+**具体步骤**:
+```xml
+<!-- network_security_config.xml -->
+<network-security-config>
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="true">10.0.2.2</domain>
+        <domain includeSubdomains="true">localhost</domain>
+        <domain includeSubdomains="true">127.0.0.1</domain>
+    </domain-config>
+</network-security-config>
 ```
 
-## API设计 (简化)
+```xml
+<!-- AndroidManifest.xml -->
+<application
+    android:networkSecurityConfig="@xml/network_security_config"
+    ...>
+```
 
-### 主要端点
-- `POST /chat` - 发送消息
-- `GET /history/{user_id}` - 获取历史
-- `POST /preferences` - 保存偏好
+```kotlin
+// NetworkModule.kt
+.connectionSpecs(listOf(
+    ConnectionSpec.CLEARTEXT,  // 允许明文连接
+    ConnectionSpec.MODERN_TLS,
+    ConnectionSpec.COMPATIBLE_TLS
+))
+```
 
-## 功能对比
+**验证结果**:
+- 后端API测试通过 (4/4)
+- Android应用重新构建成功
+- 网络通信问题已解决
 
-| 功能 | 完整版 | 简化版 |
-|------|--------|--------|
-| 对话系统 | ✅ | ✅ |
-| 语音交互 | ✅ | ✅ |
-| 情感分析 | ✅ | ✅ |
-| 多模态交互 | ✅ | ❌ |
-| 用户画像 | ✅ | ❌ |
-| 个性化推荐 | ✅ | ❌ |
-| AR功能 | ✅ | ❌ |
-| 多设备同步 | ✅ | ❌ |
+### API服务替换 (2025-07-06)
 
-## 开发资源
+**问题描述**: 将OpenAI API替换为Google Gemini API
 
-### 人员配置
-- Android开发: 1人
-- 后端开发: 1人 (兼职)
-- UI设计: 1人 (兼职)
+**替换内容**:
+1. **依赖更新**: `openai==1.3.0` → `google-generativeai==0.3.2`
+2. **代码修改**:
+   - 导入: `import openai` → `import google.generativeai as genai`
+   - 配置: `openai.api_key` → `genai.configure(api_key=...)`
+   - 模型: `gpt-3.5-turbo` → `gemini-pro`
+   - API调用: `openai.ChatCompletion.create()` → `model.generate_content()`
 
-### 时间投入
-- 总开发时间: 6周
-- 每周投入: 20-30小时
-- 总工时: 120-180小时
+**具体修改**:
+```python
+# 旧代码 (OpenAI)
+import openai
+openai.api_key = os.getenv("OPENAI_API_KEY")
+response = openai.ChatCompletion.create(
+    model="gpt-3.5-turbo",
+    messages=[...]
+)
 
-### 成本估算
-- 开发成本: 低
-- 服务器成本: 低
-- API成本: 中等
-- 维护成本: 低
+# 新代码 (Gemini)
+import google.generativeai as genai
+genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
+model = genai.GenerativeModel('gemini-pro')
+response = model.generate_content(prompt)
+```
 
-## 成功指标
+**环境变量更新**:
+- `OPENAI_API_KEY` → `GEMINI_API_KEY`
 
-### 技术指标
-- 对话响应时间 < 3秒
-- 语音识别准确率 > 90%
-- 应用大小 < 50MB
+**文档更新**:
+- README.md, TROUBLESHOOTING.md, 环境变量示例文件
+- 所有OpenAI相关引用替换为Gemini
 
-### 用户体验指标
-- 用户满意度 > 4.0/5
-- 日活跃用户 > 100
-- 用户留存率 > 40%
+**验证结果**:
+- ✅ 依赖安装成功
+- ✅ 代码修改完成
+- ✅ API测试通过 (4/4)
+- ✅ 文档更新完成
 
-## 优势分析
+## 项目结构
+```
+samantha-simple/
+├── android-app/          # Android客户端
+├── backend/             # Python后端
+├── docs/               # 文档
+├── notes/              # 笔记
+├── test_api.py         # API测试脚本
+└── test_gemini.py      # Gemini API测试脚本
+```
 
-### 开发优势
-- **快速开发**: 6周完成MVP
-- **成本低廉**: 最小化开发资源
-- **风险可控**: 功能简单，风险低
-- **易于维护**: 代码结构简单
+## 开发环境设置
 
-### 用户优势
-- **简单易用**: 界面简洁，功能明确
-- **快速上手**: 无需复杂设置
-- **稳定可靠**: 功能少，bug少
-- **轻量级**: 占用资源少
-
-## 技术实现要点
-
-### Android端
-- 使用Jetpack Compose构建UI
-- Room数据库存储本地数据
-- Retrofit处理网络请求
-- Hilt依赖注入
-
-### 后端端
-- FastAPI构建API服务
-- SQLite存储数据
-- OpenAI API集成
-- 简单的情感分析
-
-### 关键代码
-- 主界面: ChatScreen
-- 数据模型: Message, ChatUiState
-- API调用: ChatRepository
-- 语音处理: VoiceRepository
-
-## 部署方案
-
-### 本地开发
+### 后端启动
 ```bash
-# 后端启动
 cd backend
-pip install -r requirements.txt
-python main.py
+./start_backend.sh
+```
 
-# Android应用
+### Android构建
+```bash
 cd android-app
 ./gradlew assembleDebug
 ```
 
-### Docker部署
-```bash
-docker-compose up -d
-```
+## 关键文件
+- `backend/main.py` - FastAPI后端服务
+- `android-app/app/src/main/java/com/samantha/di/NetworkModule.kt` - 网络配置
+- `android-app/app/src/main/AndroidManifest.xml` - Android清单文件
+- `android-app/app/src/main/res/xml/network_security_config.xml` - 网络安全配置
+- `backend/requirements.txt` - Python依赖
+- `test_gemini.py` - Gemini API测试脚本
 
-## 测试方案
+## 注意事项
+- 开发环境使用HTTP，生产环境需要HTTPS
+- Android模拟器使用 `10.0.2.2` 访问主机
+- 需要配置Google Gemini API密钥才能正常使用AI功能
+- Gemini API使用 `gemini-pro` 模型
+- API调用方式与OpenAI不同，使用 `generate_content()` 方法
 
-### 功能测试
-- 基础对话测试
-- 语音交互测试
-- 情感分析测试
-- 历史记录测试
-
-### 性能测试
-- 响应时间测试
-- 内存使用测试
-- 电池消耗测试
-
-## 后续规划
-
-### MVP发布后
-- 收集用户反馈
-- 优化用户体验
-- 修复bug和问题
-
-### 功能迭代
-- 根据需求添加功能
-- 优化现有功能
-- 考虑高级特性
-
-## 风险评估
-
-### 技术风险
-- OpenAI API限制 → 多提供商备选
-- 语音质量 → 使用成熟方案
-- 性能问题 → 优化和缓存
-
-### 市场风险
-- 用户接受度 → 用户研究
-- 竞争压力 → 差异化设计
-- 成本控制 → 合理定价
-
-## 总结
-
-最简化版本的Samantha AI助手专注于三个核心功能：
-1. **智能对话** - 基础的AI问答
-2. **语音交互** - 语音输入输出
-3. **情感回应** - 简单的情感化交互
-
-这个设计去除了复杂功能，专注于核心体验，可以在6周内完成开发，为用户提供简洁而有效的AI助手体验。
-
-## 相关链接
-- [[Samantha AI助手项目研究笔记]]
-- [[AI助手技术趋势]]
-- [[移动应用开发]]
-- [[语音交互设计]]
-
-## 关键词
-#AI助手 #简化设计 #MVP #快速开发 #核心功能 #用户体验 #技术架构 #移动开发
-
----
-*创建时间: 2024年*
-*最后更新: 2024年*
-*标签: 简化设计, AI助手, MVP, 快速开发*
+## 下一步计划
+1. 配置Google Gemini API密钥
+2. 测试完整的聊天功能
+3. 优化UI/UX
+4. 添加语音识别功能
+5. 测试Gemini API的完整功能
